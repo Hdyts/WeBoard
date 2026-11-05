@@ -1,0 +1,35 @@
+# Unity
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/Assets/AssetStoreTools*
+
+# Berkas proyek buatan Unity di akar repo (csproj di src/ dan tests/ tetap disimpan)
+/*.csproj
+/*.sln
+/*.suo
+/*.user
+/*.pidb
+/*.booproj
+
+# .NET
+bin/
+obj/
+TestResults/
+
+# Editor dan sistem operasi
+.vs/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Hasil build
+*.apk
+*.aab
+*.unitypackage
