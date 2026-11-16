@@ -39,3 +39,6 @@ Thumbs.db
 /Assets/Scripts/Rules.meta
 /Assets/Scenes/
 /Assets/Scenes.meta
+
+# Folder sementara untuk branch deploy (dibuat di CI)
+/deploy/

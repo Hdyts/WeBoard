@@ -21,6 +21,8 @@ jobs:
     name: Build WebGL (Unity 6.3 LTS)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -45,3 +47,27 @@ jobs:
           name: WeBoard-WebGL
           path: build/WebGL
           retention-days: 14
+
+      # Hasil build dikirim ke branch "deploy" (satu commit yatim yang ditimpa setiap kali)
+      # supaya Vercel bisa melayaninya sebagai situs statis tanpa langkah build.
+      - name: Siapkan folder deploy
+        if: github.ref == 'refs/heads/main'
+        run: |
+          sudo chown -R "$USER" build
+          mkdir -p deploy
+          cp -r build/WebGL/WebGL/. deploy/
+          cp tools/vercel.json deploy/vercel.json
+          ls -la deploy
+
+      - name: Terbitkan ke branch deploy
+        if: github.ref == 'refs/heads/main'
+        working-directory: deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init -q -b deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Build WebGL dari ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" deploy

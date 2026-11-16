@@ -32,6 +32,17 @@ Tanpa .NET di komputer, tes berjalan otomatis di GitHub Actions setiap push ke `
 
 Build berjalan otomatis di GitHub Actions (`Build WebGL`) dan hasilnya diunggah sebagai artifact `WeBoard-WebGL` (unduh dari halaman run). Butuh tiga secret repo: `UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD`.
 
+## Menayangkan di Vercel
+
+Setiap build yang lulus di `main` otomatis dikirim ke branch `deploy` (hanya berkas situs statis, ditimpa setiap kali). Cara memasangnya di Vercel:
+
+1. Di Vercel pilih Add New > Project, lalu impor repo `WeBoard`.
+2. Framework Preset: **Other**. Kosongkan Build Command dan Output Directory.
+3. Di pengaturan Git proyek, ubah **Production Branch** menjadi `deploy`. Langkah ini wajib: branch `main` berisi kode sumber dan tidak punya `index.html`.
+4. Deploy. Setelah itu setiap build baru tayang sendiri.
+
+Build tanpa kompresi (kompresi ditangani Vercel), jadi tidak perlu header `Content-Encoding` khusus.
+
 ## Langkah berikutnya
 
 1. Memastikan build WebGL pertama lulus dan jalan di browser.
