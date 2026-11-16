@@ -33,3 +33,9 @@ Thumbs.db
 *.apk
 *.aab
 *.unitypackage
+
+# Dibuat otomatis: salinan pustaka aturan (lihat tools/sync-rules.sh) dan scene yang dibuat saat build
+/Assets/Scripts/Rules/
+/Assets/Scripts/Rules.meta
+/Assets/Scenes/
+/Assets/Scenes.meta
