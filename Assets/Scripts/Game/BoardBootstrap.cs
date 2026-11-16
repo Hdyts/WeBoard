@@ -14,7 +14,7 @@ namespace WeBoard.Game
     {
         private const float HexRadius = 1f;
         private const int BoardRadius = 3;
-        private const float CameraDistance = 18f;
+        private const float CameraDistance = 27f;
         private const float CameraPitch = 45f;
 
         private readonly SeededRandom _rng = new SeededRandom(2026);
@@ -54,7 +54,7 @@ namespace WeBoard.Game
             _camera.backgroundColor = new Color(0.12f, 0.09f, 0.07f);
             _camera.fieldOfView = 28f;
             _camera.nearClipPlane = 0.3f;
-            _camera.farClipPlane = 80f;
+            _camera.farClipPlane = 100f;
 
             var lightGo = new GameObject("Matahari");
             var light = lightGo.AddComponent<Light>();
