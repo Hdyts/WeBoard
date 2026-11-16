@@ -12,7 +12,7 @@ Board game RPG bergaya D&D untuk 1-8 pemain (co-op, tanpa PvP), tampil semi-3D s
 | --- | --- |
 | `src/WeBoard.Rules` | Aturan game dalam C# murni tanpa referensi ke Unity: pengacak ber-seed, modifier atribut, cek d20, koordinat heks, skala pertarungan 1-8 pemain |
 | `tests/WeBoard.Rules.Tests` | Tes xUnit untuk pustaka aturan |
-| `Assets`, `Packages`, `ProjectSettings` | Proyek Unity 6 (6000.0.86f1). `Assets/Editor/BuildScript.cs` adalah titik masuk build; scene awal dibuat lewat kode saat build |
+| `Assets`, `Packages`, `ProjectSettings` | Proyek Unity 6 (6000.3.28f1). `Assets/Editor/BuildScript.cs` adalah titik masuk build; scene awal dibuat lewat kode saat build |
 | `tools/sync-rules.sh` | Menyalin `src/WeBoard.Rules` ke `Assets/Scripts/Rules` (salinan ini tidak disimpan di git) |
 | `.github/workflows` | Tes aturan dan build WebGL di GitHub Actions |
 

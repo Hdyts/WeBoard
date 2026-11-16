@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build WebGL (Unity 6)
+    name: Build WebGL (Unity 6.3 LTS)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -34,7 +34,7 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          unityVersion: 6000.0.86f1
+          unityVersion: 6000.3.28f1
           targetPlatform: WebGL
           buildMethod: WeBoard.BuildTools.BuildScript.BuildWebGL
           versioning: None
