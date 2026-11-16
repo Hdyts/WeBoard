@@ -6,19 +6,21 @@ namespace WeBoard.Game
 {
     /// <summary>
     /// Uji awal (smoke test): diorama papan heks semi-3D, kamera snap 90 derajat,
-    /// dan lemparan d20 memakai pustaka aturan C# murni. Semua dibangun lewat kode,
-    /// jadi scene hanya perlu kosong.
+    /// dan lemparan d20 memakai pustaka aturan C# murni. Semua bentuk dibuat dari mesh
+    /// buatan sendiri (tanpa CreatePrimitive, yang bergantung pada kelas yang dibuang
+    /// saat build WebGL). Bahan diambil dari Resources/WeBoardLit yang dibuat saat build.
     /// </summary>
     public sealed class BoardBootstrap : MonoBehaviour
     {
         private const float HexRadius = 1f;
         private const int BoardRadius = 3;
-        private const float CameraDistance = 12f;
+        private const float CameraDistance = 18f;
         private const float CameraPitch = 45f;
 
         private readonly SeededRandom _rng = new SeededRandom(2026);
+        private readonly Dictionary<HexCoord, float> _tileHeights = new Dictionary<HexCoord, float>();
         private Camera _camera;
-        private Material _baseMaterial;
+        private Material _litMaterial;
         private float _yaw = 45f;
         private float _targetYaw = 45f;
         private string _status = "Tekan Lempar d20";
@@ -32,10 +34,12 @@ namespace WeBoard.Game
 
         private void Start()
         {
-            // Material bawaan dari primitif ikut masuk build, jadi aman dipakai di WebGL.
-            var probe = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            _baseMaterial = probe.GetComponent<Renderer>().sharedMaterial;
-            Destroy(probe);
+            _litMaterial = Resources.Load<Material>("WeBoardLit");
+            if (_litMaterial == null)
+            {
+                Debug.LogError("[WeBoard] Material WeBoardLit tidak ditemukan di Resources; memakai cadangan tanpa cahaya.");
+                _litMaterial = new Material(Shader.Find("Sprites/Default"));
+            }
 
             BuildEnvironment();
             BuildBoard();
@@ -50,7 +54,7 @@ namespace WeBoard.Game
             _camera.backgroundColor = new Color(0.12f, 0.09f, 0.07f);
             _camera.fieldOfView = 28f;
             _camera.nearClipPlane = 0.3f;
-            _camera.farClipPlane = 60f;
+            _camera.farClipPlane = 80f;
 
             var lightGo = new GameObject("Matahari");
             var light = lightGo.AddComponent<Light>();
@@ -62,13 +66,8 @@ namespace WeBoard.Game
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.5f, 0.5f, 0.55f);
 
-            // Meja kayu di bawah diorama.
-            var table = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            table.name = "Meja";
-            Destroy(table.GetComponent<Collider>());
-            table.transform.position = new Vector3(0f, -0.25f, 0f);
-            table.transform.localScale = new Vector3(18f, 0.5f, 18f);
-            Tint(table, new Color(0.35f, 0.23f, 0.14f));
+            // Meja kayu berbentuk heks di bawah diorama; permukaannya sejajar y = 0.
+            Piece("Meja", CreateHexPrism(8f, 1f), new Vector3(0f, -0.5f, 0f), new Vector3(1f, 0.5f, 1f), new Color(0.35f, 0.23f, 0.14f), null);
 
             UpdateCamera();
         }
@@ -82,53 +81,38 @@ namespace WeBoard.Game
             {
                 int level = _rng.Roll(3);
                 float height = 0.3f + 0.15f * (level - 1);
-                Vector3 pos = ToWorld(cell);
-
-                var tile = new GameObject("Heks " + cell);
-                tile.transform.SetParent(board, false);
-                tile.transform.position = pos;
-                tile.transform.localScale = new Vector3(1f, height, 1f);
-                tile.AddComponent<MeshFilter>().sharedMesh = hex;
-                var renderer = tile.AddComponent<MeshRenderer>();
-                renderer.sharedMaterial = MakeMaterial(TileColor(level));
-
-                if (cell == new HexCoord(0, 0))
-                {
-                    BuildMiniature(new Vector3(pos.x, height, pos.z));
-                }
+                _tileHeights[cell] = height;
+                Piece("Heks " + cell, hex, ToWorld(cell), new Vector3(1f, height, 1f), TileColor(level), board);
             }
+
+            // Miniatur: pahlawan di tengah papan dan satu musuh sebagai contoh.
+            Mesh pawn = CreateLathe(PawnProfile, 24);
+            PlacePawn(pawn, "Miniatur Penjaga Perisai", new HexCoord(0, 0), 1f, new Color(0.25f, 0.4f, 0.85f));
+            PlacePawn(pawn, "Miniatur Jamur Berjalan", new HexCoord(2, -1), 0.85f, new Color(0.75f, 0.25f, 0.3f));
         }
 
-        private void BuildMiniature(Vector3 basePos)
+        private void PlacePawn(Mesh pawn, string name, HexCoord cell, float scale, Color color)
         {
-            var root = new GameObject("Miniatur Penjaga Perisai").transform;
-            root.position = basePos;
-
-            Part(root, PrimitiveType.Cylinder, new Vector3(0f, 0.03f, 0f), new Vector3(0.75f, 0.03f, 0.75f), new Color(0.2f, 0.35f, 0.75f));
-            Part(root, PrimitiveType.Capsule, new Vector3(0f, 0.55f, 0f), new Vector3(0.45f, 0.5f, 0.45f), new Color(0.25f, 0.4f, 0.85f));
-            Part(root, PrimitiveType.Sphere, new Vector3(0f, 1.2f, 0f), new Vector3(0.42f, 0.42f, 0.42f), new Color(0.95f, 0.8f, 0.65f));
+            Vector3 pos = ToWorld(cell);
+            pos.y = _tileHeights[cell];
+            Piece(name, pawn, pos, new Vector3(scale, scale, scale), color, null);
         }
 
-        private void Part(Transform parent, PrimitiveType type, Vector3 localPos, Vector3 scale, Color color)
+        private GameObject Piece(string name, Mesh mesh, Vector3 pos, Vector3 scale, Color color, Transform parent)
         {
-            var go = GameObject.CreatePrimitive(type);
-            Destroy(go.GetComponent<Collider>());
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
+            var go = new GameObject(name);
+            if (parent != null)
+            {
+                go.transform.SetParent(parent, false);
+            }
+            go.transform.position = pos;
             go.transform.localScale = scale;
-            Tint(go, color);
-        }
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
 
-        private void Tint(GameObject go, Color color)
-        {
-            go.GetComponent<Renderer>().sharedMaterial = MakeMaterial(color);
-        }
-
-        private Material MakeMaterial(Color color)
-        {
-            var mat = new Material(_baseMaterial);
+            var mat = new Material(_litMaterial);
             mat.color = color;
-            return mat;
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            return go;
         }
 
         private static Color TileColor(int level)
@@ -149,7 +133,65 @@ namespace WeBoard.Game
             return new Vector3(x, 0f, z);
         }
 
-        /// <summary>Prisma heks bertinggi 1 satuan; skala Y menentukan tinggi tile.</summary>
+        /// <summary>Siluet miniatur (jari-jari, tinggi) dari alas bulat sampai kepala, diputar mengelilingi sumbu Y.</summary>
+        private static readonly Vector2[] PawnProfile =
+        {
+            new Vector2(0.40f, 0.00f),
+            new Vector2(0.40f, 0.08f),
+            new Vector2(0.30f, 0.12f),
+            new Vector2(0.17f, 0.35f),
+            new Vector2(0.15f, 0.60f),
+            new Vector2(0.25f, 0.70f),
+            new Vector2(0.12f, 0.78f),
+            new Vector2(0.22f, 0.92f),
+            new Vector2(0.26f, 1.10f),
+            new Vector2(0.20f, 1.26f),
+            new Vector2(0.08f, 1.34f),
+            new Vector2(0.00f, 1.36f)
+        };
+
+        /// <summary>Memutar profil (jari-jari, tinggi) menjadi mesh bersumbu Y.</summary>
+        private static Mesh CreateLathe(Vector2[] profile, int segments)
+        {
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+
+            for (int p = 0; p < profile.Length; p++)
+            {
+                for (int s = 0; s <= segments; s++)
+                {
+                    float a = 2f * Mathf.PI * s / segments;
+                    verts.Add(new Vector3(Mathf.Cos(a) * profile[p].x, profile[p].y, Mathf.Sin(a) * profile[p].x));
+                }
+            }
+
+            int stride = segments + 1;
+            for (int p = 0; p < profile.Length - 1; p++)
+            {
+                for (int s = 0; s < segments; s++)
+                {
+                    int p0 = p * stride + s;
+                    int p1 = p0 + 1;
+                    int p3 = (p + 1) * stride + s;
+                    int p2 = p3 + 1;
+                    tris.Add(p0);
+                    tris.Add(p2);
+                    tris.Add(p1);
+                    tris.Add(p0);
+                    tris.Add(p3);
+                    tris.Add(p2);
+                }
+            }
+
+            var mesh = new Mesh { name = "Lathe" };
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        /// <summary>Prisma heks bertinggi <paramref name="height"/>; skala Y menentukan tinggi akhir.</summary>
         private static Mesh CreateHexPrism(float radius, float height)
         {
             var verts = new List<Vector3>();

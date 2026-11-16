@@ -42,3 +42,5 @@ Thumbs.db
 
 # Folder sementara untuk branch deploy (dibuat di CI)
 /deploy/
+/Assets/Resources/
+/Assets/Resources.meta

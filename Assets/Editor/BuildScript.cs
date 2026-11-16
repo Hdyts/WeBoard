@@ -34,6 +34,7 @@ namespace WeBoard.BuildTools
                 // Tanpa kompresi supaya mudah dilayani host statis mana pun (Vercel mengompresi sendiri).
                 PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
 
+                CreateLitMaterial();
                 CreateBootScene();
 
                 var options = new BuildPlayerOptions
@@ -58,6 +59,29 @@ namespace WeBoard.BuildTools
             }
 
             EditorApplication.Exit(exitCode);
+        }
+
+        /// <summary>
+        /// Bahan berpencahayaan yang disimpan sebagai aset di Resources, supaya shader-nya
+        /// pasti ikut dalam build WebGL (Shader.Find atau bahan bawaan primitif bisa tampil magenta).
+        /// </summary>
+        private static void CreateLitMaterial()
+        {
+            Shader shader = Shader.Find("Legacy Shaders/Diffuse");
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+            if (shader == null)
+            {
+                throw new InvalidOperationException("Tidak ada shader berpencahayaan yang bisa dipakai.");
+            }
+
+            Directory.CreateDirectory("Assets/Resources");
+            var material = new Material(shader) { name = "WeBoardLit", color = Color.white };
+            AssetDatabase.CreateAsset(material, "Assets/Resources/WeBoardLit.mat");
+            AssetDatabase.SaveAssets();
+            Debug.Log("[WeBoard] Material WeBoardLit memakai shader: " + shader.name);
         }
 
         private static void CreateBootScene()
